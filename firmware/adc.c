@@ -1,5 +1,6 @@
 #include "adc.h"
 #include "ch32fun.h"
+#include "ch32v20xhw.h"
 
 
 // ADC
@@ -34,7 +35,7 @@ void adc_dma_init( void ) {
 
     // Enable IRQ and DMA channel
     NVIC_EnableIRQ(DMA1_Channel1_IRQn);
-    DMA1_Channel1->CFGR |= DMA_IT_TC | DMA_CFGR1_EN;
+    DMA1_Channel1->CFGR |= DMA_IT_TC ;
 
 }
 
@@ -68,13 +69,14 @@ void adc_init( void )
     
     // Set up conversions
 	ADC1->RSQR1 = ((ADC_CHANNELS - 1) << 20); // number of channels converted
-	ADC1->RSQR2 = (6 << 0) | (7 << 5) | (9 << 10); // inputs 6-7
+	ADC1->RSQR2 = (6 << 0) | (7 << 5) | (9 << 10); // inputs 6-8
 	ADC1->RSQR3 = (0 << 0) | (1 << 5) | (2 << 10) | (3 << 15) | (4 << 20) | (5 << 25);	// inputs 0-5
     
     // set sampling time for channels???
-    // ADC1->SAMPTR2 &= ~(ADC_SMP0<<(3*7));
-    // ADC1->SAMPTR2 |= 7<<(3*7);    // 0:7 => 3/9/15/30/43/57/73/241 cycles
-    
+    ADC1->SAMPTR2 = ADC_SampleTime_239Cycles5 | (ADC_SampleTime_239Cycles5 << 3)  | (ADC_SampleTime_239Cycles5 << 6)  | 
+		    (ADC_SampleTime_239Cycles5 << 9)  | (ADC_SampleTime_239Cycles5 << 12) | (ADC_SampleTime_239Cycles5 << 15) |
+			(ADC_SampleTime_239Cycles5 << 18) | (ADC_SampleTime_239Cycles5 << 21) | (ADC_SampleTime_239Cycles5 << 24); 
+			
     // turn on ADC and set rule group to sw trig
     ADC1->CTLR2 |= ADC_ADON | ADC_EXTSEL | ADC_EXTTRIG ;
 	ADC1->CTLR1 |= ADC_SCAN; // scan mode, measure all channels at once
@@ -96,16 +98,27 @@ void adc_init( void )
 volatile uint8_t adc_dma_running = 0;
 void adc_poll_dma( void )
 {
-	//wait if necessary
+	// wait if necessary
 	while(adc_dma_running == 1);
-	adc_dma_running = 1;
-    // enable dma
-	DMA1_Channel1->CFGR |= DMA_CFGR1_EN;
 
+	
+	adc_dma_running = 1;
+
+	// If TIM1 is running (Motor PWM), wait until it resets to get consistent readings (Always sample at the same time relative to PWM)
+	if(TIM1->CTLR1 & TIM_CEN) {
+		volatile uint16_t cnt = TIM1->CNT;
+		// wait for rollover
+		while(TIM1->CNT >= cnt) {
+			cnt = TIM1->CNT;
+		}
+	}
 	// Scan
     ADC1->CTLR1 |= ADC_SCAN ;
 	ADC1->CTLR2 |= ADC_DMA ;
-
+	
+    // enable dma
+	DMA1_Channel1->CFGR |= DMA_CFGR1_EN;
+	
 	// start sw conversion (auto clears)
 	ADC1->CTLR2 |= ADC_SWSTART;
 }

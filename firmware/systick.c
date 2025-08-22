@@ -1,6 +1,8 @@
 #include "systick.h"
 #include "ch32v20xhw.h"
-#include <stdio.h>
+#include "adc.h"
+#include "motor.h"
+// #include <stdio.h>
 
 // Incremented in the SysTick IRQ - in this example once per millisecond
 volatile uint32_t systick_cnt;
@@ -38,6 +40,8 @@ uint32_t systick_remaining_us( void ) {
 	return (uint32_t) (difference / SYSTICK_ONE_MICROSECOND);
 }
 
+
+
 void SysTick_Handler(void)
 {
 	// Increment the Compare Register for the next trigger
@@ -45,7 +49,7 @@ void SysTick_Handler(void)
 	// you may miss your next interrupt trigger
 	// (Make sure the IQR is lightweight and CMP value is reasonable)
 	SysTick->CMP += SYSTICK_PERIOD;
-
+	
 	// Clear the trigger state for the next IRQ
 	SysTick->SR = 0x00000000;
 

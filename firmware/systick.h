@@ -8,7 +8,7 @@ extern volatile uint32_t systick_cnt;
 // Number of ticks elapsed per microsecond (48 when using 48MHz Clock)
 #define SYSTICK_ONE_MICROSECOND ((uint32_t)FUNCONF_SYSTEM_CORE_CLOCK / 1000000)
 
-#define SYSTICK_PERIOD SYSTICK_ONE_MILLISECOND
+#define SYSTICK_PERIOD SYSTICK_ONE_MILLISECOND;
 
 // Simple macro functions to give a arduino-like functions to call
 // Reads the raw SysTick Count, and divides it by the number of 

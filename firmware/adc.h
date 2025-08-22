@@ -4,6 +4,8 @@
 
 #include <stdio.h>
 
+#define ADC_COUNTS 4096 
+
 #define ADC_CHANNELS 9
 
 #define AI_SEL_A PB8
