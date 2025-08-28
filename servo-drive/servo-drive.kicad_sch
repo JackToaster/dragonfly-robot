@@ -5246,6 +5246,16 @@
 		)
 		(uuid "89525d21-5ed2-4ff2-9e58-822a150551f9")
 	)
+	(text "1.61 mA/count"
+		(exclude_from_sim no)
+		(at 140.716 119.888 90)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+		)
+		(uuid "a0881ae5-244a-44c2-930c-1746782c7680")
+	)
 	(text "Layout note: Kelvin Sense Connection to shunts"
 		(exclude_from_sim no)
 		(at 327.66 121.92 0)

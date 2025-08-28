@@ -6,6 +6,7 @@
 #include "main.h"
 #include "led_status.h"
 #include "adc.h"
+#include "serial.h"
 #include "systick.h"
 #include "motor.h"
 
@@ -62,9 +63,16 @@ int main()
 	funPinMode(AI_SEL_A, GPIO_CFGLR_OUT_10Mhz_PP);
 	funPinMode(AI_SEL_B, GPIO_CFGLR_OUT_10Mhz_PP);
 
-	// // initializing peripherals
+	// initializing peripherals
 	status_led_state = led_status_init();
 
+	// Serial
+	printf("Initializing serial...\n");
+	serial_init();
+	dma_uart_setup();
+	printf("Serial initialized!");
+
+	// ADC
 	printf("Initializing ADC...\n");
 	adc_init();
 	printf("ADC Initialized\n");
@@ -80,6 +88,8 @@ int main()
 
 	wakeup_motors();
 	set_position(&motors[3], 1500);
+
+	static const char message[] = "abcdefghijklmnopqrstuvwxyz";
 	// motors[3].duty_cap = MOTOR_DUTY_MAX / 2; // 50% duty limit
 	while(1)
 	{
@@ -107,8 +117,28 @@ int main()
 			
 			last_pos = pos;
 			last_t = time;
-			printf("D %d P %d S %d\n",  motors[3].duty, adc_state.pot[3],  motors[3].position_setpoint);
+			// printf("D %d P %d S %d\n",  motors[3].duty, adc_state.pot[3],  motors[3].position_setpoint);
 			// duty -= 1; if(duty == 0) duty = 1;
+			uint32_t bytes = bytes_available(&uart3_rxbuf);
+			uint8_t* data = read_data(&uart3_rxbuf, bytes_available(&uart3_rxbuf));
+			
+			printf("Tx: %s\nRx: %s\n", message, data);
+			printf("Tx (hex): ");
+			for(uint32_t i = 0; i < bytes; ++i) {
+				printf("%x ", message[i]);
+			}
+			printf("\nRx (hex): ");
+
+			for(uint32_t i = 0; i < bytes; ++i) {
+				printf("%x ", data[i]);
+			}
+			printf("\n");
+			Delay_Ms(100);
+			dma_uart_tx(message, sizeof(message) - 1);
+
+			Delay_Ms(100);
+
+
 		}
 
 
