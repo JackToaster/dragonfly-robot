@@ -112,6 +112,8 @@ void adc_poll_dma( void )
 			cnt = TIM1->CNT;
 		}
 	}
+	
+	__disable_irq();
 	// Scan
     ADC1->CTLR1 |= ADC_SCAN ;
 	ADC1->CTLR2 |= ADC_DMA ;
@@ -121,6 +123,7 @@ void adc_poll_dma( void )
 	
 	// start sw conversion (auto clears)
 	ADC1->CTLR2 |= ADC_SWSTART;
+	__enable_irq();
 }
 
 void adc_wait_for_data( void ) {

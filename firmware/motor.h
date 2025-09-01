@@ -17,8 +17,8 @@
 #define MOTOR_KV 2750 // units/sec/V
 
 #define POSITION_GAIN_SCALE 32768
-#define POSITION_kP 300
-#define POSITION_kI 3
+#define POSITION_kP 100
+#define POSITION_kI 2
 #define POSITION_kD 0
 
 #define MOTOR_D0_MODE PB12

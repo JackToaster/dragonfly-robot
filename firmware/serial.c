@@ -14,7 +14,7 @@ void serial_init() {
 	funPinMode(PB11, GPIO_CFGLR_IN_FLOAT); // USART3-RX
 
 	// Setup UART for Tx 8n1
-	USART3->CTLR1 = USART_WordLength_8b | USART_Parity_Odd | USART_Mode_Tx | USART_Mode_Rx | USART_IT_RXNE;
+	USART3->CTLR1 = USART_WordLength_8b | USART_Parity_No | USART_Mode_Tx | USART_Mode_Rx | USART_FLAG_RXNE;
 	USART3->CTLR2 = USART_StopBits_1 | USART_HardwareFlowControl_None;
 	// Enable Tx DMA event
 	USART3->CTLR3 = USART_DMAReq_Tx ;
@@ -93,7 +93,6 @@ void dma_uart_tx(const void *data, uint32_t len)
 
 
 UartRxBufferT uart3_rxbuf;
-volatile uint8_t _nothing;
 // UART3 RXNE Interrupt
 __attribute__((interrupt)) __attribute__((section(".srodata")))
 void USART3_IRQHandler(void)
@@ -108,7 +107,6 @@ void USART3_IRQHandler(void)
 
 	// Clear flag
 	USART3->STATR &= ~USART_FLAG_RXNE;
-	_nothing = USART3->DATAR; // extra read
 }
 
 
@@ -125,12 +123,28 @@ uint32_t bytes_available(UartRxBufferT* buf) {
 }
 
 // return pointer to a contiguous buffer of data, null terminated
-uint8_t* read_data(UartRxBufferT* buf, uint32_t len) {
+uint8_t* read_data(UartRxBufferT* buf, uint32_t len) { // todo maybe pass a destination pointer like memcpy does?
 	uint32_t end_addr = (buf->read_addr + len) % UART_RX_BUF_SIZE;
 	uint8_t* write_ptr = buf->b2;
 	// we do a fun lil bespoke memcpy
 	for(;buf->read_addr != end_addr; buf->read_addr = (buf->read_addr + 1) % UART_RX_BUF_SIZE) {
 		*write_ptr++ = buf->buffer[buf->read_addr];
+	}
+	*write_ptr = 0; // null term
+	return buf->b2;
+}
+
+uint8_t peek(UartRxBufferT* buf) { // look at first byte of buffer, but don't advance read pointer
+	return buf->buffer[buf->read_addr];
+}
+uint8_t* peek_n(UartRxBufferT* buf, uint32_t len) { // look at first bytes of buffer, but don't advance read pointer
+	uint32_t end_addr = (buf->read_addr + len) % UART_RX_BUF_SIZE;
+	uint8_t* write_ptr = buf->b2;
+
+	uint32_t temp_read_addr = buf->read_addr;
+	// we do a fun lil bespoke memcpy
+	for(;temp_read_addr != end_addr; temp_read_addr = (temp_read_addr + 1) % UART_RX_BUF_SIZE) {
+		*write_ptr++ = buf->buffer[temp_read_addr];
 	}
 	*write_ptr = 0; // null term
 	return buf->b2;

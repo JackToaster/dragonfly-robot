@@ -9,6 +9,7 @@
 #include "serial.h"
 #include "systick.h"
 #include "motor.h"
+#include "crsf.h"
 
 // Debug printf
 uint32_t count;
@@ -67,15 +68,15 @@ int main()
 	status_led_state = led_status_init();
 
 	// Serial
-	printf("Initializing serial...\n");
+	printf("starting serial...\n");
 	serial_init();
 	dma_uart_setup();
-	printf("Serial initialized!");
+	printf("Serial up\n");
 
 	// ADC
-	printf("Initializing ADC...\n");
+	printf("starting ADC...\n");
 	adc_init();
-	printf("ADC Initialized\n");
+	printf("ADC up\n");
 
 	motor_init();
 
@@ -86,11 +87,13 @@ int main()
 	uint32_t last_t;
 	uint32_t last_pos;
 
-	wakeup_motors();
-	set_position(&motors[3], 1500);
+	for(uint8_t i = 0; i < N_MOTORS; ++i) {
+		motors[i].duty_cap = MOTOR_DUTY_MAX / 3; // 33% duty limit to avoid burning out servos while testing
+	}
 
-	static const char message[] = "abcdefghijklmnopqrstuvwxyz";
-	// motors[3].duty_cap = MOTOR_DUTY_MAX / 2; // 50% duty limit
+	wakeup_motors();
+	// set_position(&motors[3], 1500);
+
 	while(1)
 	{
 		Delay_Us(systick_remaining_us()); // wait for next tick
@@ -99,56 +102,43 @@ int main()
 		system_update();
 	
 
-		if(millis() % 2000 == 0) {
-			set_position(&motors[3], 1900);
-		}
-		if(millis() % 2000 == 1000) {
-			set_position(&motors[3], 2100);
-		}
-
-		if(millis() % 100 == 0) {
-			uint32_t pos = adc_state.pot[3];
-			uint32_t time = millis();
-			uint32_t dt_millis = time - last_t;
-			uint32_t dx = last_pos - pos;
-
-			float speed = (float) dx / ((float) dt_millis) * 1000.0;
-			// printf("dt: %d dx: %d speed: %d ", dt_millis, dx, (uint32_t)speed);
-			
-			last_pos = pos;
-			last_t = time;
-			// printf("D %d P %d S %d\n",  motors[3].duty, adc_state.pot[3],  motors[3].position_setpoint);
-			// duty -= 1; if(duty == 0) duty = 1;
-			uint32_t bytes = bytes_available(&uart3_rxbuf);
-			uint8_t* data = read_data(&uart3_rxbuf, bytes_available(&uart3_rxbuf));
-			
-			printf("Tx: %s\nRx: %s\n", message, data);
-			printf("Tx (hex): ");
-			for(uint32_t i = 0; i < bytes; ++i) {
-				printf("%x ", message[i]);
+		// if(millis() % 2000 == 0) {
+		// 	set_position(&motors[3], 1900);
+		// }
+		// if(millis() % 2000 == 1000) {
+		// 	set_position(&motors[3], 2100);
+		// }
+		
+		// https://github.com/crsf-wg/crsf/wiki/Message-Format
+		uint8_t bytes;
+		while((bytes = bytes_available(&uart3_rxbuf)) >= 4) { // minimum size for CSRF message is 4 bytes
+			uint8_t sync = peek(&uart3_rxbuf);
+			if(sync == 0xC8 || sync == 0xEE) { // check for CRSF Sync byte
+				uint8_t* header = peek_n(&uart3_rxbuf, 3);
+				uint8_t msg_len = header[1] + 2; // message length is LEN+2
+				if(msg_len > 64) {
+					printf("INVALID sync %x len %d :(((\n", sync, msg_len);
+					
+					read_data(&uart3_rxbuf, 1); // discard byte
+					continue;
+				}
+				uint8_t msg_type = header[2];
+				if(bytes >= msg_len) {
+					// printf("msg! len %d type %x\n", msg_len, msg_type);
+					uint8_t* message = read_data(&uart3_rxbuf, msg_len);
+					if(msg_type == 0x16) { // RC channels packed
+						struct crsf_channels_s* channels = (struct crsf_channels_s*) &message[3];
+						printf("Channels %u %u %u %u %u %u %u %u %u %u %u %u %u %u %u %u\n", channels->ch0,channels->ch1,channels->ch2,channels->ch3,channels->ch4,channels->ch5,channels->ch6,channels->ch7,channels->ch8,channels->ch9,channels->ch10,channels->ch11,channels->ch12,channels->ch13,channels->ch14,channels->ch15);
+						set_duty_pct(&motors[3], (((int32_t)channels->ch0) - 992) / 6);
+						// printf("%d\n", adc_state.pot[3]);
+					}
+				} else {
+					break;
+				}
+			} else {
+				// printf(":( %d\n", uart3_rxbuf.overrun);
+				read_data(&uart3_rxbuf, 1); // discard byte
 			}
-			printf("\nRx (hex): ");
-
-			for(uint32_t i = 0; i < bytes; ++i) {
-				printf("%x ", data[i]);
-			}
-			printf("\n");
-			Delay_Ms(100);
-			dma_uart_tx(message, sizeof(message) - 1);
-
-			Delay_Ms(100);
-
-
 		}
-
-
-		// Delay_Ms(1);
-		// printf("Attempting adc conversion...\n")
-		// printf(" ADC is %d\n", val);
-		// printf("DMA Values!\n");
-
-
-		// printf("vbat: %d\n", get_vbat());
-
 	}
 }

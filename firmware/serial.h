@@ -27,3 +27,5 @@ void clear_buf(UartRxBufferT *buf);
 uint32_t bytes_available(UartRxBufferT* buf);
 // return pointer to a contiguous buffer of data
 uint8_t* read_data(UartRxBufferT* buf, uint32_t len);
+uint8_t peek(UartRxBufferT* buf); // look at first byte of buffer, but don't advance read pointer
+uint8_t* peek_n(UartRxBufferT* buf, uint32_t len); // look at first bytes of buffer, but don't advance read pointer
