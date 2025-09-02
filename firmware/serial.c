@@ -26,23 +26,24 @@ void serial_init() {
 	NVIC_EnableIRQ(USART3_IRQn);
 
 	// USART4
+	// TODO This breaks ADC for some reason!!!
 	// Enable UART and GPIOD
-	RCC->APB1PCENR |= RCC_APB1Periph_UART4; // UART4 is actually a USART on v203
+	// RCC->APB1PCENR |= RCC_APB1Periph_UART4; // UART4 is actually a USART on v203
 
-	// Push-Pull, 10MHz Output on D5, with AutoFunction
-	AFIO->PCFR2 |= GPIO_FullRemap_USART4;
-	funPinMode(PB0, GPIO_CFGLR_OUT_50Mhz_AF_PP); // USART3-TX
-	funPinMode(PB5, GPIO_CFGLR_IN_FLOAT); // USART3-RX
+	// // Push-Pull, 10MHz Output on D5, with AutoFunction
+	// AFIO->PCFR2 |= GPIO_FullRemap_USART4;
+	// funPinMode(PB0, GPIO_CFGLR_OUT_50Mhz_AF_PP); // USART3-TX
+	// funPinMode(PB5, GPIO_CFGLR_IN_FLOAT); // USART3-RX
 
-	// Setup UART for Tx 8n1
-	UART4->CTLR1 = USART_WordLength_8b | USART_Parity_No | USART_Mode_Tx;
-	UART4->CTLR2 = USART_StopBits_1;
-	// Enable Tx DMA event
-	UART4->CTLR3 = USART_DMAReq_Tx;
+	// // Setup UART for Tx 8n1
+	// UART4->CTLR1 = USART_WordLength_8b | USART_Parity_No | USART_Mode_Tx;
+	// UART4->CTLR2 = USART_StopBits_1;
+	// // Enable Tx DMA event
+	// UART4->CTLR3 = USART_DMAReq_Tx;
 
-	// Set baud rate and enable UART
-	UART4->BRR = ((FUNCONF_SYSTEM_CORE_CLOCK / 2) + (UART_BR)/2) / (UART_BR);
-	UART4->CTLR1 |= CTLR1_UE_Set;
+	// // Set baud rate and enable UART
+	// UART4->BRR = ((FUNCONF_SYSTEM_CORE_CLOCK / 2) + (UART_BR)/2) / (UART_BR);
+	// UART4->CTLR1 |= CTLR1_UE_Set;
 }
 
 void dma_uart_setup(void)

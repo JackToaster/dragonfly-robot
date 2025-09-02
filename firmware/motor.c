@@ -186,7 +186,7 @@ void wakeup_motors( void ) {
 	for(uint8_t i = 0; i < N_MOTORS; ++i) {
 		*motors[i].duty_buffer = MOTOR_DUTY_MAX;
 	}
-	Delay_Ms(10);
+	Delay_Ms(2);
 	for(uint8_t i = 0; i < N_MOTORS; ++i) {
 		*motors[i].duty_buffer = MOTOR_DUTY_MIN;
 	}

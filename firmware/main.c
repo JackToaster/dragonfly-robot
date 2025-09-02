@@ -67,6 +67,8 @@ int main()
 	// initializing peripherals
 	status_led_state = led_status_init();
 
+	crc_init();
+
 	// Serial
 	printf("starting serial...\n");
 	serial_init();
@@ -88,7 +90,7 @@ int main()
 	uint32_t last_pos;
 
 	for(uint8_t i = 0; i < N_MOTORS; ++i) {
-		motors[i].duty_cap = MOTOR_DUTY_MAX / 3; // 33% duty limit to avoid burning out servos while testing
+		// motors[i].duty_cap = MOTOR_DUTY_MAX / 3; // 33% duty limit to avoid burning out servos while testing
 	}
 
 	wakeup_motors();
@@ -108,7 +110,7 @@ int main()
 		// if(millis() % 2000 == 1000) {
 		// 	set_position(&motors[3], 2100);
 		// }
-		
+		// printf("%d\n", adc_state.pot[3]);
 		// https://github.com/crsf-wg/crsf/wiki/Message-Format
 		uint8_t bytes;
 		while((bytes = bytes_available(&uart3_rxbuf)) >= 4) { // minimum size for CSRF message is 4 bytes
@@ -117,7 +119,7 @@ int main()
 				uint8_t* header = peek_n(&uart3_rxbuf, 3);
 				uint8_t msg_len = header[1] + 2; // message length is LEN+2
 				if(msg_len > 64) {
-					printf("INVALID sync %x len %d :(((\n", sync, msg_len);
+					printf("I\n");//NVALID sync %x len %d :(((\n", sync, msg_len);
 					
 					read_data(&uart3_rxbuf, 1); // discard byte
 					continue;
@@ -126,11 +128,21 @@ int main()
 				if(bytes >= msg_len) {
 					// printf("msg! len %d type %x\n", msg_len, msg_type);
 					uint8_t* message = read_data(&uart3_rxbuf, msg_len);
+					uint8_t crc = crc8x_fast(0, &message[2], msg_len - 3);
+					uint8_t msg_crc = message[msg_len - 1];
+					if(crc != msg_crc) {
+						printf("crc er %x %x\n", crc, msg_crc);
+						continue;
+					}
 					if(msg_type == 0x16) { // RC channels packed
+						
+						// printf("Computed %x msg %x\n", crc, msg_crc);
 						struct crsf_channels_s* channels = (struct crsf_channels_s*) &message[3];
-						printf("Channels %u %u %u %u %u %u %u %u %u %u %u %u %u %u %u %u\n", channels->ch0,channels->ch1,channels->ch2,channels->ch3,channels->ch4,channels->ch5,channels->ch6,channels->ch7,channels->ch8,channels->ch9,channels->ch10,channels->ch11,channels->ch12,channels->ch13,channels->ch14,channels->ch15);
-						set_duty_pct(&motors[3], (((int32_t)channels->ch0) - 992) / 6);
-						// printf("%d\n", adc_state.pot[3]);
+
+
+						// printf("Channels %u %u %u %u %u %u %u %u %u %u %u %u %u %u %u %u\n", channels->ch0,channels->ch1,channels->ch2,channels->ch3,channels->ch4,channels->ch5,channels->ch6,channels->ch7,channels->ch8,channels->ch9,channels->ch10,channels->ch11,channels->ch12,channels->ch13,channels->ch14,channels->ch15);
+						// set_duty_pct(&motors[3], (((int32_t)channels->ch0) - 992) / 6);
+						set_position(&motors[3], (int32_t)channels->ch0);
 					}
 				} else {
 					break;

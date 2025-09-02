@@ -36,8 +36,11 @@ void systick_init(void)
 
 uint32_t systick_remaining_us( void ) {
 	uint64_t difference = SysTick->CMP - SysTick->CNT;
+	if(difference > SYSTICK_PERIOD) {
+		return SYSTICK_PERIOD;
+	}
 
-	return (uint32_t) (difference / SYSTICK_ONE_MICROSECOND);
+	return (uint32_t) (difference / (uint64_t)SYSTICK_ONE_MICROSECOND);
 }
 
 
