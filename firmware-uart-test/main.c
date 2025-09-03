@@ -159,24 +159,24 @@ int main()
 	printf("Serial initialized!");
 
 
-	static const char message[] = "UUUUUUUUUUUUUUUUUUUUUUUUUUUUUUU";
 	while(1)
 	{
-		uint32_t bytes = bytes_available(&uart3_rxbuf);
-		uint8_t* data = read_data(&uart3_rxbuf, bytes_available(&uart3_rxbuf));
 		
-		printf("Tx: %s\nRx: %s\n", message, data);
-		printf("Tx (hex): ");
-		for(uint32_t i = 0; i < bytes; ++i) {
-			printf("%x ", message[i]);
-		}
-		printf("\nRx (hex): ");
+		// uint32_t bytes = bytes_available(&uart3_rxbuf);
+		// uint8_t* data = read_data(&uart3_rxbuf, bytes_available(&uart3_rxbuf));
+		
+		// printf("Tx: %s\nRx: %s\n", message, data);
+		// printf("Tx (hex): ");
+		// for(uint32_t i = 0; i < bytes; ++i) {
+		// 	printf("%x ", message[i]);
+		// }
+		// printf("\nRx (hex): ");
 
-		for(uint32_t i = 0; i < bytes; ++i) {
-			printf("%x ", data[i]);
-		}
-		printf("\n");
-		Delay_Ms(100);
-		dma_uart_tx(message, sizeof(message) - 1);
+		// for(uint32_t i = 0; i < bytes; ++i) {
+		// 	printf("%x ", data[i]);
+		// }
+		// printf("\n");
+		// Delay_Ms(100);
+		// dma_uart_tx(message, sizeof(message) - 1);
 	}
 }
